@@ -36,9 +36,9 @@ def handle(client):
         current_time = "[" + now.strftime("%H:%M:%S") + "]"
         try:
             msg = message = client.recv(1024)
-            msgCheckCommand = msg[0].decode('ascii')
+            msgCheckCommand = msg[0:1].decode('ascii')
             if msgCheckCommand == "#":
-                code = int.from_bytes(msg[1], 'big')
+                code = int.from_bytes(msg[1:2], 'big')
                 if code == 128:
                     userA = nicknames[clients.index(client)]
                     userB = msg[2:].decode('ascii')
@@ -63,9 +63,9 @@ def handle(client):
                         client.send(cmd + code + userB.encode('ascii'))
                 elif code == 129:
                     userA = nicknames[clients.index(client)]
-                    userB = msg[260:].decode('ascii')
+                    userB = msg[259:].decode('ascii')
                     p = int.from_bytes(msg[2:258], 'big')
-                    g = int.from_bytes(msg[259], 'big')
+                    g = int.from_bytes(msg[258:259], 'big')
                     dhParams.pop((p, g), None)
                     print(f'{current_time} {userA} needs Diffie-Hellman parameters again')
                     code = codeToByte(1)
@@ -80,7 +80,7 @@ def handle(client):
                     client.send(cmd + code + p + g + userB.encode('ascii'))
                 elif code == 130:
                     userA = nicknames[clients.index(client)]
-                    userB = msg[259:].decode('ascii')
+                    userB = msg[258:].decode('ascii')
                     g_a = int.from_bytes(msg[2:258], 'big')
                     print(f'{current_time} {userA} send g_a, sending to {userB}')
                     code = codeToByte(2)
@@ -104,17 +104,17 @@ def handle(client):
                     clientByUser(userA).send(cmd + code + userB.encode('ascii'))
                 elif code == 133:
                     g_b = msg[2:258]
-                    keyFingerPrint = msg[259:267]
-                    userA = msg[268:].decode('ascii')
+                    keyFingerPrint = msg[258:266]
+                    userA = msg[266:].decode('ascii')
                     userB = nicknames[client.index(client)]
                     print(f'{current_time} Sending g_b from {userB} to {userA}')
                     code = codeToByte(3)
                     clientByUser(userA).send(cmd + code + g_b + keyFingerPrint + userB.encode('ascii'))
                 elif code == 134:
                     userA = nicknames[clients.index(client)]
-                    userB = msg[260:].decode('ascii')
+                    userB = msg[259:].decode('ascii')
                     p = int.from_bytes(msg[2:258], 'big')
-                    g = int.from_bytes(msg[259], 'big')
+                    g = int.from_bytes(msg[258:259], 'big')
                     dhParams.pop((p, g), None)
                     secretChatPairs.pop((userA, userB), None)
                     code = codeToByte(8)

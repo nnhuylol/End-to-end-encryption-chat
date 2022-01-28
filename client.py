@@ -46,14 +46,14 @@ def recieve():
         if stop_thread:
             break    
         try:
-            msg = message = client.recv(1024)
-            msgCheckCommand = msg[0].decode('ascii')
+            msg = client.recv(1024)
+            msgCheckCommand = msg[0:1].decode('ascii')
             if msgCheckCommand == "#":
-                code = int.from_bytes(msg[1], 'big')
+                code = int.from_bytes(msg[1:2], 'big')
                 if code == 1:
                     p = int.from_bytes(msg[2:258], 'big')
-                    g = int.from_bytes(msg[259], 'big')
-                    userB = msg[260:].decode('ascii')
+                    g = int.from_bytes(msg[258:259], 'big')
+                    userB = msg[259:].decode('ascii')
                     # check = checkPG(p, g)
                     check = True
                     if check:
@@ -67,14 +67,14 @@ def recieve():
                         client.send(cmd + code + msg[2:259] + userB.encode('ascii'))
                 elif code == 2:
                     g_a = msg[2:258]
-                    userA = msg[259:].decode('ascii')
+                    userA = msg[258:].decode('ascii')
                     secretChatPair[userA] = [0, 0, 0, g_a, True]
                     print(f'{userA} want to start Secret Chat!!') 
                     print(f'/accept_chat {userA} to accept. /decline_chat {userA} to decline')
                 elif code == 3:
                     g_b = int.from_bytes(msg[2:258], 'big')
-                    keyFingerPrint = msg[259:267]
-                    userB = msg[268:].decode('ascii')
+                    keyFingerPrint = msg[258:266]
+                    userB = msg[266:].decode('ascii')
                     a, p, g = secretChatPair[userB][0:2]
                     key = genKey(g_b, a, p)
                     if keyFingerPrint == genKeyFingerPrint(key):
@@ -94,8 +94,8 @@ def recieve():
                     waitingDh.remove(userB)
                 elif code == 5:
                     p = int.from_bytes(msg[2:258], 'big')
-                    g = int.from_bytes(msg[259], 'big')
-                    userA = msg[260:].decode('ascii')
+                    g = int.from_bytes(msg[258:259], 'big')
+                    userA = msg[259:].decode('ascii')
                     g_a = int.from_bytes(secretChatPair[userA][3], 'big')
                     b, g_b = genG(g, p)
                     key = genKey(g_a, b, p)
@@ -117,7 +117,7 @@ def recieve():
                     print(f'Some wrong while key exchanging with {userA}! Secret Chat interrupted!')
                     secretChatPair.pop(userA, None)
             else:
-                messageDecode = message.decode('ascii')
+                messageDecode = msg.decode('ascii')
                 if messageDecode == 'NICK':
                     client.send(nickname.encode('ascii'))
                     next_message = client.recv(1024).decode('ascii')
