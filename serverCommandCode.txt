@@ -4,19 +4,21 @@ Start command with "#"
 128 - 255: From Client
 ##########################
 CODE	DESCRIPTION
-1	Check PG
-2	Send g_a to user B
-3	The opposite accept Secret Chat
-4	The opposite decline Secret Chat
-5	Send DH param to user B
-6	User B is already paired
-7	User B is not online yet
-8	Error when key exchange
-9	Invite myself notification
-128	User A start Secret Chat
-129	Wrong PG, user A need to resend
-130	Send g_a to user B in Diffie-Hellman
-131	Accept Secret Chat
-132	Decline Secret Chat
-133	Send g_b to user A in Diffie-Hellman
-134	Error when key exchange
+1		Check PG
+2		Send g_a to user B
+3		The opposite accept Secret Chat
+4		The opposite decline Secret Chat
+5		Send DH param to user B
+6		User B is already paired
+7		User B is not online yet
+8		Error when key exchange
+9		Invite myself notification
+10		Send Secret Chat message to user
+128		User A start Secret Chat
+129		Wrong PG, user A need to resend
+130		Send g_a to user B in Diffie-Hellman
+131		Accept Secret Chat
+132		Decline Secret Chat
+133		Send g_b to user A in Diffie-Hellman
+134		Error when key exchange
+135		Secret Chat with specific user

@@ -42,10 +42,10 @@ def handle(client):
             if code == 128:
                 userA = nicknames[clients.index(client)]
                 userB = msg[2:].decode('ascii')
-                if userA == userB:
-                    code = codeToByte(9)
-                    client.send(cmd + code + userB.encode('ascii'))
-                elif userB in nicknames:
+                # if userA == userB:
+                #     code = codeToByte(9)
+                #     client.send(cmd + code + userB.encode('ascii'))
+                if userB in nicknames:
                     if ((userA, userB) in secretChatPairs) or ((userB, userA) in secretChatPairs):
                         code = codeToByte(6)
                         client.send(cmd + code + userB.encode('ascii'))
@@ -121,6 +121,13 @@ def handle(client):
                 code = codeToByte(8)
                 print(f'{current_time} {userA} and {userB} failed to create SecretChat Key')
                 clientByUser(userB).send(cmd + code + userA.encode('ascii'))
+            elif code == 135:
+                nameLengthReceiver = int.from_bytes(msg[2:3], 'big')
+                sender = nicknames[clients.index(client)]
+                receiver = msg[3:3+nameLengthReceiver].decode('ascii')
+                nameLengthSender = len(sender).to_bytes(1, 'big')
+                code = codeToByte(10)
+                clientByUser(receiver).send(cmd + code + nameLengthSender + sender.encode('ascii') + msg[3+nameLengthReceiver:])
         else:
             msgDecode = msg.decode('ascii')
             if msgDecode.startswith('KICK'):
