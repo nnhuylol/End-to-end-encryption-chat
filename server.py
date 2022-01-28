@@ -34,122 +34,123 @@ def handle(client):
     while True:
         now = datetime.now()
         current_time = "[" + now.strftime("%H:%M:%S") + "]"
-        try:
-            msg = message = client.recv(1024)
-            msgCheckCommand = msg[0:1].decode('ascii')
-            if msgCheckCommand == "#":
-                code = int.from_bytes(msg[1:2], 'big')
-                if code == 128:
-                    userA = nicknames[clients.index(client)]
-                    userB = msg[2:].decode('ascii')
-                    if userB in nicknames:
-                        if ((userA, userB) in secretChatPairs) or ((userB, userA) in secretChatPairs):
-                            code = codeToByte(7)
-                            client.send(cmd + code + userB.encode('ascii'))
-                        else:
-                            print(f'{current_time} {userA} needs Diffie-Hellman parameters')
-                            code = codeToByte(1)
-                            p = 0
-                            g = 0
-                            while (p and g) or (p, g) in dhParams:
-                                p, g = genDhParameter()
-                            p = p.to_bytes(256, 'big')
-                            g = g.to_bytes(1, 'big')
-                            secretChatPairs[(userA, userB)] = (p, g)
-                            dhParams[(p, g)] = (userA, userB)
-                            client.send(cmd + code + p + g + userB.encode('ascii'))
-                    else:
-                        code = codeToByte(8)
+        # try:
+        msg = message = client.recv(1024)
+        msgCheckCommand = msg[0:1].decode('ascii')
+        if msgCheckCommand == "#":
+            code = int.from_bytes(msg[1:2], 'big')
+            if code == 128:
+                userA = nicknames[clients.index(client)]
+                userB = msg[2:].decode('ascii')
+                if userA == userB:
+                    code = codeToByte(9)
+                    client.send(cmd + code + userB.encode('ascii'))
+                elif userB in nicknames:
+                    if ((userA, userB) in secretChatPairs) or ((userB, userA) in secretChatPairs):
+                        code = codeToByte(6)
                         client.send(cmd + code + userB.encode('ascii'))
-                elif code == 129:
-                    userA = nicknames[clients.index(client)]
-                    userB = msg[259:].decode('ascii')
-                    p = int.from_bytes(msg[2:258], 'big')
-                    g = int.from_bytes(msg[258:259], 'big')
-                    dhParams.pop((p, g), None)
-                    print(f'{current_time} {userA} needs Diffie-Hellman parameters again')
-                    code = codeToByte(1)
-                    p = 0
-                    g = 0
-                    while (p and g) or (p, g) in dhParams:
+                    else:
+                        print(f'{current_time} {userA} needs Diffie-Hellman parameters')
+                        code = codeToByte(1)
                         p, g = genDhParameter()
-                    p = p.to_bytes(256, 'big')
-                    g = g.to_bytes(1, 'big')
-                    secretChatPairs[(userA, userB)] = (p, g)
-                    dhParams[(p, g)] = (userA, userB)
-                    client.send(cmd + code + p + g + userB.encode('ascii'))
-                elif code == 130:
-                    userA = nicknames[clients.index(client)]
-                    userB = msg[258:].decode('ascii')
-                    g_a = int.from_bytes(msg[2:258], 'big')
-                    print(f'{current_time} {userA} send g_a, sending to {userB}')
-                    code = codeToByte(2)
-                    clientByUser(userB).send(cmd + code + g_a + userA.encode('ascii'))
-                elif code == 131:
-                    userB = nicknames[client.index(client)]
-                    userA = msg[2:].decode('ascii')
-                    print(f'{current_time} {userB} accept Secret Chat with {userA}')
-                    code = codeToByte(5)
-                    p, g = secretChatPairs[(userA, userB)]
-                    p = p.to_bytes(256, 'big')
-                    g = g.to_bytes(1, 'big')
-                    client.send(cmd + code + p + g + userA.encode('ascii'))
-                elif code == 132:
-                    userB = nicknames[client.index(client)]
-                    userA = msg[2:].decode('ascii')
-                    dhParams.pop(secretChatPairs[(userA, userB)], None)
-                    secretChatPairs.pop((userA, userB), None)
-                    code = codeToByte(4)
-                    print(f'{current_time} {userB} decline Secret Chat with {userA}')
-                    clientByUser(userA).send(cmd + code + userB.encode('ascii'))
-                elif code == 133:
-                    g_b = msg[2:258]
-                    keyFingerPrint = msg[258:266]
-                    userA = msg[266:].decode('ascii')
-                    userB = nicknames[client.index(client)]
-                    print(f'{current_time} Sending g_b from {userB} to {userA}')
-                    code = codeToByte(3)
-                    clientByUser(userA).send(cmd + code + g_b + keyFingerPrint + userB.encode('ascii'))
-                elif code == 134:
-                    userA = nicknames[clients.index(client)]
-                    userB = msg[259:].decode('ascii')
-                    p = int.from_bytes(msg[2:258], 'big')
-                    g = int.from_bytes(msg[258:259], 'big')
-                    dhParams.pop((p, g), None)
-                    secretChatPairs.pop((userA, userB), None)
-                    code = codeToByte(8)
-                    print(f'{current_time} {userA} and {userB} failed to create SecretChat Key')
-                    clientByUser(userB).send(cmd + code + userA.encode('ascii'))
-            else:
-                msgDecode = msg.decode('ascii')
-                if msgDecode.startswith('KICK'):
-                    if nicknames[clients.index(client)] == 'admin':
-                        nameToKick = msgDecode[5:]
-                        kick_user(nameToKick)
-                    else:
-                        client.send('Command Refused!'.encode('ascii'))
-                elif msgDecode.startswith('BAN'):
-                    if nicknames[clients.index(client)] == 'admin':
-                        nameToBan = msgDecode[4:]
-                        kick_user(nameToBan)
-                        with open('bans.txt','a') as f:
-                            f.write(f'{nameToBan}\n')
-                        print(f'{current_time} {nameToBan} was banned by the Admin!')
-                    else:
-                        client.send('Command Refused!'.encode('ascii'))  
+                        while (p, g) in dhParams:
+                            p, g = genDhParameter()
+                        secretChatPairs[(userA, userB)] = (p, g)
+                        p = p.to_bytes(256, 'big')
+                        g = g.to_bytes(1, 'big')
+                        dhParams[(p, g)] = (userA, userB)
+                        client.send(cmd + code + p + g + userB.encode('ascii'))
                 else:
-                    broadcast(message)   # As soon as message recieved, broadcast it.
+                    code = codeToByte(7)
+                    client.send(cmd + code + userB.encode('ascii'))
+            elif code == 129:
+                userA = nicknames[clients.index(client)]
+                userB = msg[259:].decode('ascii')
+                p = int.from_bytes(msg[2:258], 'big')
+                g = int.from_bytes(msg[258:259], 'big')
+                dhParams.pop((p, g), None)
+                print(f'{current_time} {userA} needs Diffie-Hellman parameters again')
+                code = codeToByte(1)
+                p, g = genDhParameter()
+                while (p, g) in dhParams:
+                    p, g = genDhParameter()
+                secretChatPairs[(userA, userB)] = (p, g)
+                p = p.to_bytes(256, 'big')
+                g = g.to_bytes(1, 'big')
+                dhParams[(p, g)] = (userA, userB)
+                client.send(cmd + code + p + g + userB.encode('ascii'))
+            elif code == 130:
+                userA = nicknames[clients.index(client)]
+                userB = msg[258:].decode('ascii')
+                g_a = msg[2:258]
+                print(f'{current_time} {userA} send g_a, sending to {userB}')
+                code = codeToByte(2)
+                clientByUser(userB).send(cmd + code + g_a + userA.encode('ascii'))
+            elif code == 131:
+                userB = nicknames[clients.index(client)]
+                userA = msg[2:].decode('ascii')
+                print(f'{current_time} {userB} accept Secret Chat with {userA}')
+                code = codeToByte(5)
+                p, g = secretChatPairs[(userA, userB)]
+                p = p.to_bytes(256, 'big')
+                g = g.to_bytes(1, 'big')
+                client.send(cmd + code + p + g + userA.encode('ascii'))
+            elif code == 132:
+                userB = nicknames[clients.index(client)]
+                userA = msg[2:].decode('ascii')
+                dhParams.pop(secretChatPairs[(userA, userB)], None)
+                secretChatPairs.pop((userA, userB), None)
+                code = codeToByte(4)
+                print(f'{current_time} {userB} decline Secret Chat with {userA}')
+                clientByUser(userA).send(cmd + code + userB.encode('ascii'))
+            elif code == 133:
+                g_b = msg[2:258]
+                keyFingerPrint = msg[258:266]
+                userA = msg[266:].decode('ascii')
+                userB = nicknames[clients.index(client)]
+                print(f'{current_time} Sending g_b from {userB} to {userA}')
+                code = codeToByte(3)
+                clientByUser(userA).send(cmd + code + g_b + keyFingerPrint + userB.encode('ascii'))
+            elif code == 134:
+                userA = nicknames[clients.index(client)]
+                userB = msg[259:].decode('ascii')
+                p = int.from_bytes(msg[2:258], 'big')
+                g = int.from_bytes(msg[258:259], 'big')
+                dhParams.pop((p, g), None)
+                secretChatPairs.pop((userA, userB), None)
+                code = codeToByte(8)
+                print(f'{current_time} {userA} and {userB} failed to create SecretChat Key')
+                clientByUser(userB).send(cmd + code + userA.encode('ascii'))
+        else:
+            msgDecode = msg.decode('ascii')
+            if msgDecode.startswith('KICK'):
+                if nicknames[clients.index(client)] == 'admin':
+                    nameToKick = msgDecode[5:]
+                    kick_user(nameToKick)
+                else:
+                    client.send('Command Refused!'.encode('ascii'))
+            elif msgDecode.startswith('BAN'):
+                if nicknames[clients.index(client)] == 'admin':
+                    nameToBan = msgDecode[4:]
+                    kick_user(nameToBan)
+                    with open('bans.txt','a') as f:
+                        f.write(f'{nameToBan}\n')
+                    print(f'{current_time} {nameToBan} was banned by the Admin!')
+                else:
+                    client.send('Command Refused!'.encode('ascii'))  
+            else:
+                broadcast(message)   # As soon as message recieved, broadcast it.
         
-        except:
-            if client in clients:
-                index = clients.index(client)
-                #Index is used to remove client from list after getting diconnected
-                client.remove(client)
-                client.close
-                nickname = nicknames[index]
-                broadcast(f'{nickname} left the Chat!'.encode('ascii'))
-                nicknames.remove(nickname)
-                break
+        # except:
+        #     if client in clients:
+        #         index = clients.index(client)
+        #         #Index is used to remove client from list after getting diconnected
+        #         client.remove(client)
+        #         client.close
+        #         nickname = nicknames[index]
+        #         broadcast(f'{nickname} left the Chat!'.encode('ascii'))
+        #         nicknames.remove(nickname)
+        #         break
 # Main Recieve method
 def recieve():
     while True:
@@ -190,7 +191,7 @@ def recieve():
         thread.start()
 
 def clientByUser(userName):
-    index = nicknames.find(userName)
+    index = nicknames.index(userName)
     return clients[index]
 
 def codeToByte(code):

@@ -12,6 +12,7 @@ CODE	DESCRIPTION
 6	User B is already paired
 7	User B is not online yet
 8	Error when key exchange
+9	Invite myself notification
 128	User A start Secret Chat
 129	Wrong PG, user A need to resend
 130	Send g_a to user B in Diffie-Hellman

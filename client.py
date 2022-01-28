@@ -45,98 +45,106 @@ def recieve():
         global stop_thread
         if stop_thread:
             break    
-        try:
-            msg = client.recv(1024)
-            msgCheckCommand = msg[0:1].decode('ascii')
-            if msgCheckCommand == "#":
-                code = int.from_bytes(msg[1:2], 'big')
-                if code == 1:
-                    p = int.from_bytes(msg[2:258], 'big')
-                    g = int.from_bytes(msg[258:259], 'big')
-                    userB = msg[259:].decode('ascii')
-                    # check = checkPG(p, g)
-                    check = True
-                    if check:
-                        a, g_a = genG(g, p)
-                        code = codeToByte(130)
-                        g_a = g_a.to_bytes(256, 'big')
-                        secretChatPair[userB] = [a, p, g, bytes(), False]
-                        client.send(cmd + code + g_a + userB.encode('ascii'))
-                    else:
-                        code = codeToByte(129)
-                        client.send(cmd + code + msg[2:259] + userB.encode('ascii'))
-                elif code == 2:
-                    g_a = msg[2:258]
-                    userA = msg[258:].decode('ascii')
-                    secretChatPair[userA] = [0, 0, 0, g_a, True]
-                    print(f'{userA} want to start Secret Chat!!') 
-                    print(f'/accept_chat {userA} to accept. /decline_chat {userA} to decline')
-                elif code == 3:
-                    g_b = int.from_bytes(msg[2:258], 'big')
-                    keyFingerPrint = msg[258:266]
-                    userB = msg[266:].decode('ascii')
-                    a, p, g = secretChatPair[userB][0:2]
-                    key = genKey(g_b, a, p)
-                    if keyFingerPrint == genKeyFingerPrint(key):
-                        secretChatPair[userB] = [a, p, g, key, False]
-                        waitingDh.remove(userB)
-                        print(f'Key exchange with {userB} is completed! Ready to Secret Chat!')
-                        print(f'Use /sc {userB} [content] to text with {userB} in Secret Chat Mode')
-                    else:
-                        print(f'Some wrong while key exchanging with {userB}!Secret Chat interrupted!')
-                        waitingDh.remove(userB)
-                        secretChatPair.pop(userB, None)
-                        code = codeToByte(134)
-                        client.send(cmd + code + p + g + userB.encode('ascii'))
-                elif code == 4:
-                    userB = msg[2:].decode('ascii')
-                    print(f'{userB} decline Secret Chat with you')
-                    waitingDh.remove(userB)
-                elif code == 5:
-                    p = int.from_bytes(msg[2:258], 'big')
-                    g = int.from_bytes(msg[258:259], 'big')
-                    userA = msg[259:].decode('ascii')
-                    g_a = int.from_bytes(secretChatPair[userA][3], 'big')
-                    b, g_b = genG(g, p)
-                    key = genKey(g_a, b, p)
-                    keyFingerPrint = genKeyFingerPrint(key)
-                    secretChatPair[userA] = [b, p, g, key, True]
-                    code = codeToByte(133)
-                    g_b = g_b.to_bytes(256, 'big')
-                    client.send(cmd + code + g_b + keyFingerPrint + userA.encode('ascii'))
-                elif code == 6:
-                    userB = msg[2:].decode('ascii')
-                    waitingDh.remove(userB)
-                    print(f'Already in Secret Chat with {userB}')
-                elif code == 7:
-                    userB = msg[2:].decode('ascii')
-                    waitingDh.remove(userB)
-                    print(f'{userB} is not online yet')
-                elif code == 8:
-                    userA = msg[2:].decode('ascii')
-                    print(f'Some wrong while key exchanging with {userA}! Secret Chat interrupted!')
-                    secretChatPair.pop(userA, None)
-            else:
-                messageDecode = msg.decode('ascii')
-                if messageDecode == 'NICK':
-                    client.send(nickname.encode('ascii'))
-                    next_message = client.recv(1024).decode('ascii')
-                    if next_message == 'PASS':
-                        client.send(password.encode('ascii'))
-                        if client.recv(1024).decode('ascii') == 'REFUSE':
-                            print("Connection is Refused !! Wrong Password")
-                            stop_thread = True
-                    # Clients those are banned can't reconnect
-                    elif next_message == 'BAN':
-                        print('Connection Refused due to Ban')
-                        client.close()
-                        stop_thread = True
+        # try:
+        msg = client.recv(1024)
+        msgCheckCommand = msg[0:1].decode('ascii')
+        if msgCheckCommand == "#":
+            code = int.from_bytes(msg[1:2], 'big')
+            if code == 1:
+                p = int.from_bytes(msg[2:258], 'big')
+                g = int.from_bytes(msg[258:259], 'big')
+                userB = msg[259:].decode('ascii')
+                # check = checkPG(p, g)
+                check = True
+                if check:
+                    a, g_a = genG(g, p)
+                    code = codeToByte(130)
+                    g_a = g_a.to_bytes(256, 'big')
+                    secretChatPair[userB] = [a, p, g, bytes(), False]
+                    client.send(cmd + code + g_a + userB.encode('ascii'))
                 else:
-                    print(messageDecode)
-        except:
-            print('Error Occured while Connecting')
-            client.close()
-            break
+                    code = codeToByte(129)
+                    client.send(cmd + code + msg[2:259] + userB.encode('ascii'))
+            elif code == 2:
+                g_a = msg[2:258]
+                userA = msg[258:].decode('ascii')
+                secretChatPair[userA] = [0, 0, 0, g_a, True]
+                print(f'{userA} want to start Secret Chat!!') 
+                print(f'/accept_chat {userA} to accept. /decline_chat {userA} to decline')
+            elif code == 3:
+                g_b = int.from_bytes(msg[2:258], 'big')
+                keyFingerPrint = msg[258:266]
+                userB = msg[266:].decode('ascii')
+                a, p, g = secretChatPair[userB][0:3]
+                key = genKey(g_b, a, p)
+                if keyFingerPrint == genKeyFingerPrint(key):
+                    secretChatPair[userB] = [a, p, g, key, False]
+                    waitingDh.remove(userB)
+                    print(f'Key exchange with {userB} is completed! Ready to Secret Chat!')
+                    print(f'Use /sc {userB} [content] to text with {userB} in Secret Chat Mode')
+                else:
+                    print(f'Some wrong while key exchanging with {userB}!Secret Chat interrupted!')
+                    waitingDh.remove(userB)
+                    secretChatPair.pop(userB, None)
+                    p = p.to_bytes(256, 'big')
+                    g = g.to_bytes(1, 'big')
+                    code = codeToByte(134)
+                    client.send(cmd + code + p + g + userB.encode('ascii'))
+            elif code == 4:
+                userB = msg[2:].decode('ascii')
+                print(f'{userB} decline Secret Chat with you')
+                waitingDh.remove(userB)
+            elif code == 5:
+                p = int.from_bytes(msg[2:258], 'big')
+                g = int.from_bytes(msg[258:259], 'big')
+                userA = msg[259:].decode('ascii')
+                g_a = int.from_bytes(secretChatPair[userA][3], 'big')
+                b, g_b = genG(g, p)
+                key = genKey(g_a, b, p)
+                keyFingerPrint = genKeyFingerPrint(key)
+                secretChatPair[userA] = [b, p, g, key, True]
+                code = codeToByte(133)
+                g_b = g_b.to_bytes(256, 'big')
+                client.send(cmd + code + g_b + keyFingerPrint + userA.encode('ascii'))
+            elif code == 6:
+                userB = msg[2:].decode('ascii')
+                waitingDh.remove(userB)
+                print(f'Already in Secret Chat with {userB}')
+            elif code == 7:
+                userB = msg[2:].decode('ascii')
+                waitingDh.remove(userB)
+                print(f'{userB} is not online yet')
+            elif code == 8:
+                userA = msg[2:].decode('ascii')
+                print(f'Some wrong while key exchanging with {userA}! Secret Chat interrupted!')
+                secretChatPair.pop(userA, None)
+            elif code == 9:
+                userA = msg[2:].decode('ascii')
+                print('Invite yourself! Really?')
+                waitingDh.remove(userA)
+            else:
+                print(msg.decode('ascii'))
+        else:
+            messageDecode = msg.decode('ascii')
+            if messageDecode == 'NICK':
+                client.send(nickname.encode('ascii'))
+                next_message = client.recv(1024).decode('ascii')
+                if next_message == 'PASS':
+                    client.send(password.encode('ascii'))
+                    if client.recv(1024).decode('ascii') == 'REFUSE':
+                        print("Connection is Refused !! Wrong Password")
+                        stop_thread = True
+                # Clients those are banned can't reconnect
+                elif next_message == 'BAN':
+                    print('Connection Refused due to Ban')
+                    client.close()
+                    stop_thread = True
+            else:
+                print(messageDecode)
+        # except:
+        #     print('Error Occured while Connecting')
+        #     client.close()
+        #     break
         
 def write():
     while True:
