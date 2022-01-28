@@ -15,4 +15,4 @@ Requirement
 ==
 Library: pycryptodome, gensafeprime
 
-Use pip install <library>
+Use pip install [library] to setup
