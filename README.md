@@ -13,6 +13,5 @@ MTProto: https://core.telegram.org/api/end-to-end
 
 Requirement
 ==
-Library: pycryptodome, gensafeprime
-
+Library: pycryptodome (ver 3.5), gensafeprime
 Use pip install [library] to setup
